@@ -72,3 +72,8 @@
 .market-card strong{overflow-wrap:anywhere}
 .market-card>small:last-child{color:#8f929d}
 .price-calculator input[readonly]{border-color:#285340;color:#d8c58d;cursor:default}
+
+/* Public market data provider manager */
+.provider-free{font:9px 'DM Mono';color:#8f929d;white-space:nowrap;border:1px solid var(--line);padding:6px 8px;border-radius:4px}
+.provider-list .integration{padding:13px 0}
+@media(max-width:600px){.provider-free{margin-left:51px}}
