@@ -4,14 +4,14 @@
 export type BotStatus = "Running" | "Paused" | "Stopped";
 export type TradingMode = "paper";
 export type PaperTradeConnector = "binance_paper_trade" | "kucoin_paper_trade" | "kraken_paper_trade" | "gate_io_paper_trade";
-export type BotStrategy = "Pure Market Making" | "Grid" | "Avellaneda Market Making";
+export type BotStrategy = "Simple PMM" | "Pure Market Making" | "Grid" | "Avellaneda Market Making";
 
 export interface BotParameters {
   orderSizeUsd: number;
   bidAskSpreadPercent: number;
   inventoryTargetPercent: number;
   inventoryCapPercent: number;
-  dailyLossLimitUsd: number;
+  dailyLossLimitUsd: number;\n  orderRefreshTimeSeconds: number;
 }
 
 export interface BotConfig {
