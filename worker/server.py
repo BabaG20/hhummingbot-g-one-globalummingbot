@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Authenticated, paper-only HTTP adapter for one Hummingbot installation."""
-import hmac, json, os, re, subprocess, threading, time
+import hmac, json, math, os, re, subprocess, threading
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -25,7 +25,7 @@ def validate_payload(data):
     name = data.get("name", "paper_bot")
     if not isinstance(name, str) or not NAME_RE.fullmatch(name): raise ValueError("Bot name may contain only letters, numbers, _ and - (max 40).")
     exchange = data.get("exchange")
-    if exchange not in PAPER_CONNECTORS: raise ValueError("Only approved Hummingbot paper-trade connectors are allowed.")
+    if not isinstance(exchange, str) or exchange not in PAPER_CONNECTORS: raise ValueError("Only approved Hummingbot paper-trade connectors are allowed.")
     pair = data.get("trading_pair")
     if not isinstance(pair, str) or not PAIR_RE.fullmatch(pair): raise ValueError("Trading pair must look like BTC-USDT.")
     amount = data.get("order_amount")
@@ -33,7 +33,7 @@ def validate_payload(data):
     ask = data.get("ask_spread")
     refresh = data.get("order_refresh_time", 15)
     for key, value in (("order_amount", amount), ("bid_spread", bid), ("ask_spread", ask)):
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not float(value) == float(value): raise ValueError(key + " must be a finite number.")
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)): raise ValueError(key + " must be a finite number.")
     if amount <= 0 or amount > 1000000: raise ValueError("order_amount must be greater than 0 and at most 1,000,000 base units.")
     if bid < 0 or ask < 0 or bid > 0.5 or ask > 0.5: raise ValueError("Spreads must be decimal fractions between 0 and 0.5.")
     if isinstance(refresh, bool) or not isinstance(refresh, int) or refresh < 1 or refresh > 86400: raise ValueError("order_refresh_time must be an integer from 1 to 86400 seconds.")
@@ -124,6 +124,8 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/v1/bot/stop":
                 if self.headers.get("Content-Length", "0") not in ("", "0"): return self.send_json(400, {"error": "This endpoint does not accept a body."})
                 with STATE_LOCK:
+                    state = load_state()
+                    if not state or state.get("paper_only") is not True: return self.send_json(409, {"error": "No worker-owned paper bot exists on this installation."})
                     result = run_hbot(["stop"], "stop")
                 return self.send_json(200, {"ok": True, "result": result})
             return self.send_json(404, {"error": "not_found"})
