@@ -35,7 +35,7 @@ def validate_payload(data):
     for key, value in (("order_amount", amount), ("bid_spread", bid), ("ask_spread", ask)):
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)): raise ValueError(key + " must be a finite number.")
     if amount <= 0 or amount > 1000000: raise ValueError("order_amount must be greater than 0 and at most 1,000,000 base units.")
-    if bid < 0 or ask < 0 or bid > 0.5 or ask > 0.5: raise ValueError("Spreads must be decimal fractions between 0 and 0.5.")
+    if bid < 0 or ask < 0 or bid > 0.05 or ask > 0.05: raise ValueError("Spreads must be decimal fractions between 0 and 0.05 (5%).")
     if isinstance(refresh, bool) or not isinstance(refresh, int) or refresh < 1 or refresh > 86400: raise ValueError("order_refresh_time must be an integer from 1 to 86400 seconds.")
     return {"name": name, "exchange": exchange, "trading_pair": pair, "order_amount": float(amount), "bid_spread": float(bid), "ask_spread": float(ask), "order_refresh_time": refresh, "price_type": "mid"}
 
