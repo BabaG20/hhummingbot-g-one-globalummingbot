@@ -12,7 +12,7 @@ export interface HummingbotPmmConfigDraft {
   bid_spread: number;
   ask_spread: number;
   order_refresh_time: null;
-  order_amount: null;
+  order_amount: number | null;
   inventory_skew_enabled: true;
   inventory_target_base_pct: number;
 }
@@ -28,7 +28,7 @@ export interface StrategyMappingResult {
   paperClientConfig: PaperClientConfigDraft | null;
   warnings: string[];
 }
-export function mapBotToHummingbotConfig(bot: BotConfig): StrategyMappingResult {
+export function mapBotToHummingbotConfig(bot: BotConfig, referencePrice?: number): StrategyMappingResult {
   if (bot.strategy !== "Pure Market Making") return {
     supported: false, readyForEngine: false, strategyName: bot.strategy,
     config: null, paperClientConfig: null,
@@ -41,6 +41,9 @@ export function mapBotToHummingbotConfig(bot: BotConfig): StrategyMappingResult 
     warnings: ["Bot parameters are missing. Open the bot editor and save its settings first."],
   };
   const connector = getPaperConnector(bot.paperTradeConnector);
+  const orderAmount = Number.isFinite(referencePrice) && (referencePrice ?? 0) > 0
+    ? Number((parameters.orderSizeUsd / (referencePrice as number)).toFixed(8))
+    : null;
   return {
     supported: true, readyForEngine: false, strategyName: "pure_market_making",
     config: {
@@ -50,7 +53,7 @@ export function mapBotToHummingbotConfig(bot: BotConfig): StrategyMappingResult 
       bid_spread: parameters.bidAskSpreadPercent,
       ask_spread: parameters.bidAskSpreadPercent,
       order_refresh_time: null,
-      order_amount: null,
+      order_amount: orderAmount,
       inventory_skew_enabled: true,
       inventory_target_base_pct: parameters.inventoryTargetPercent,
     },
@@ -60,7 +63,7 @@ export function mapBotToHummingbotConfig(bot: BotConfig): StrategyMappingResult 
     } : null,
     warnings: [
       ...(connector ? [] : ["Choose a paper connector. The selected paper connector is mapped to the Hummingbot strategy exchange field; its base connector is separately enabled in paper_trade_exchanges."]),
-      "order_amount is unset: the UI stores order size in USD, while Hummingbot requires base-asset quantity. A verified conversion price is required.",
+      ...(orderAmount === null ? ["order_amount is unset: enter a reference price to calculate base-asset quantity. The entered price is manual and not a live ticker."] : ["order_amount is calculated from the manually entered reference price; confirm a fresh market price before any future engine integration."]),
       "order_refresh_time is unset because no refresh interval is configured yet.",
       "Paper balances shown are Hummingbot v2.18.0 defaults; they are draft client settings, not funded exchange balances.",
       "Workspace and bot risk limits are not native fields in this strategy config; backend/worker enforcement is still required.",
