@@ -1,5 +1,5 @@
 import type { BotParameters } from "./domain";
-import type { RiskLimits } from "./risk";
+import { evaluatePaperOrderRisk, type RiskCheck, type RiskLimits } from "./risk";
 
 export const DEFAULT_BOT_PARAMETERS: BotParameters = {
   orderSizeUsd: 50,
@@ -19,4 +19,26 @@ export function validateBotParameters(value: BotParameters, global: RiskLimits):
   if (value.inventoryTargetPercent > value.inventoryCapPercent) return "Inventory target cannot exceed the bot inventory cap.";
   if (value.dailyLossLimitUsd <= 0 || value.dailyLossLimitUsd > global.maxDailyLossUsd) return "Bot daily loss limit must be above $0 and cannot exceed the global daily loss limit.";
   return null;
+}
+
+
+/** Evaluate a hypothetical paper order against both bot-specific and workspace limits. */
+export function evaluateBotPaperOrderRisk(
+  parameters: BotParameters,
+  global: RiskLimits,
+  projectedDailyLossUsd: number,
+  projectedInventoryPercent: number,
+): RiskCheck[] {
+  const effectiveLimits: RiskLimits = {
+    maxDailyLossUsd: Math.min(global.maxDailyLossUsd, parameters.dailyLossLimitUsd),
+    maxOrderNotionalUsd: Math.min(global.maxOrderNotionalUsd, parameters.orderSizeUsd),
+    maxInventoryPercent: Math.min(global.maxInventoryPercent, parameters.inventoryCapPercent),
+    minSpreadPercent: global.minSpreadPercent,
+  };
+  return evaluatePaperOrderRisk({
+    orderNotionalUsd: parameters.orderSizeUsd,
+    projectedDailyLossUsd,
+    projectedInventoryPercent,
+    spreadPercent: parameters.bidAskSpreadPercent,
+  }, effectiveLimits);
 }
