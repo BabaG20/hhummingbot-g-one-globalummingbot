@@ -3,6 +3,7 @@
  */
 export type BotStatus = "Running" | "Paused" | "Stopped";
 export type TradingMode = "paper";
+export type PaperTradeConnector = "binance_paper_trade" | "kucoin_paper_trade" | "kraken_paper_trade" | "gate_io_paper_trade";
 export type BotStrategy = "Pure Market Making" | "Grid" | "Avellaneda Market Making";
 
 export interface BotParameters {
@@ -24,6 +25,7 @@ export interface BotConfig {
   createdAt: string;
   tradingMode: TradingMode;
   parameters?: BotParameters;
+  paperTradeConnector?: PaperTradeConnector;
 }
 
 export interface PaperOrder {
