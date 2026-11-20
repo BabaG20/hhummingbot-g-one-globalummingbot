@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { BotConfig } from "./domain";
+import { loadBots, saveBots } from "./storage";
 import { Activity, ArrowDownRight, ArrowUpRight, BarChart3, Bell, Bot, CheckCircle2, ChevronDown, CircleHelp, Clock3, Command, Cpu, Database, Gauge, LayoutDashboard, LifeBuoy, Menu, MoreHorizontal, Pause, Play, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Square, Terminal, Wallet, X, Zap } from "lucide-react";
 
-type BotRow = { name:string; pair:string; strategy:string; state:"Running"|"Paused"|"Stopped"; pnl:number; uptime:string };
+type BotRow = BotConfig;
 const seedBots:BotRow[] = [
- {name:"BTC Market Maker",pair:"BTC-USDT",strategy:"Pure Market Making",state:"Running",pnl:128.42,uptime:"2d 14h"},
- {name:"ETH Grid Pilot",pair:"ETH-USDT",strategy:"Grid",state:"Running",pnl:64.18,uptime:"18h 32m"},
- {name:"SOL Spread Watch",pair:"SOL-USDT",strategy:"Avellaneda Market Making",state:"Paused",pnl:-12.60,uptime:"—"},
+ {id:"demo-btc-market-maker",name:"BTC Market Maker",pair:"BTC-USDT",strategy:"Pure Market Making",state:"Running",pnl:128.42,uptime:"2d 14h",createdAt:"2026-11-20T09:00:00.000Z",tradingMode:"paper"},
+ {id:"demo-eth-grid-pilot",name:"ETH Grid Pilot",pair:"ETH-USDT",strategy:"Grid",state:"Running",pnl:64.18,uptime:"18h 32m",createdAt:"2026-11-20T09:00:00.000Z",tradingMode:"paper"},
+ {id:"demo-sol-spread-watch",name:"SOL Spread Watch",pair:"SOL-USDT",strategy:"Avellaneda Market Making",state:"Paused",pnl:-12.60,uptime:"—",createdAt:"2026-11-20T09:00:00.000Z",tradingMode:"paper"},
 ];
 const nav = [
  {label:"Workspace",items:[["Overview",LayoutDashboard],["Bots",Bot],["Markets",BarChart3],["Paper Trading",Wallet],["Analytics",Gauge]]},
@@ -14,7 +16,8 @@ const nav = [
 const money=(n:number)=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:2}).format(n);
 export default function App(){
  const [page,setPage]=useState("Overview");
- const [bots,setBots]=useState(seedBots);
+ const [bots,setBots]=useState<BotRow[]>(()=>loadBots(seedBots));
+ useEffect(()=>{ saveBots(bots); },[bots]);
  const [query,setQuery]=useState("");
  const [showCreate,setShowCreate]=useState(false);
  const [mobileNav,setMobileNav]=useState(false);
@@ -22,7 +25,7 @@ export default function App(){
  const filtered=useMemo(()=>bots.filter(b=>(b.name+" "+b.pair+" "+b.strategy).toLowerCase().includes(query.toLowerCase())),[bots,query]);
  const toggle=(name:string)=>setBots(old=>old.map(b=>b.name===name?{...b,state:b.state==="Running"?"Paused":"Running"}:b));
  const stop=(name:string)=>setBots(old=>old.map(b=>b.name===name?{...b,state:"Stopped"}:b));
- const create=()=>{setBots(old=>[{name:"New Paper Bot",pair:"BTC-USDT",strategy:"Pure Market Making",state:"Stopped",pnl:0,uptime:"—"},...old]);setShowCreate(false);setPage("Bots");setNotice("Demo bot created. No engine is connected.");};
+ const create=()=>{setBots(old=>[{id:crypto.randomUUID(),name:"New Paper Bot",pair:"BTC-USDT",strategy:"Pure Market Making",state:"Stopped",pnl:0,uptime:"—",createdAt:new Date().toISOString(),tradingMode:"paper"},...old]);setShowCreate(false);setPage("Bots");setNotice("Demo bot created. No engine is connected.");};
  return <div className="app-shell">
   <aside className={mobileNav?"sidebar open":"sidebar"}>
    <div className="brand"><div className="brand-mark">G</div><div><b>G ONE GLOBAL</b><small>TRADING SYSTEMS</small></div><button className="icon-btn mobile-close" onClick={()=>setMobileNav(false)}><X size={17}/></button></div>
