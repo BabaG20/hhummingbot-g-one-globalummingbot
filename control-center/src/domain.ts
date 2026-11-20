@@ -11,7 +11,8 @@ export interface BotParameters {
   bidAskSpreadPercent: number;
   inventoryTargetPercent: number;
   inventoryCapPercent: number;
-  dailyLossLimitUsd: number;\n  orderRefreshTimeSeconds: number;
+  dailyLossLimitUsd: number;
+  orderRefreshTimeSeconds: number;
 }
 
 export interface BotConfig {
