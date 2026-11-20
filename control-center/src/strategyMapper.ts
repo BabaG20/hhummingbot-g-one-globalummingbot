@@ -1,21 +1,16 @@
 import type { BotConfig } from "./domain";
 import { DEFAULT_PAPER_BALANCES, getPaperConnector } from "./paperTrading";
-import { calculatePmmOrderAmount } from "./marketPricing";
 
-/**
- * Maps only fields verified against the pinned Hummingbot v2.18.0 source.
- * Output is a reviewable draft, never a runnable or connected configuration.
- */
-export interface HummingbotPmmConfigDraft {
-  strategy: "pure_market_making";
-  exchange: string | null;
-  market: string;
+export interface HummingbotSimplePmmConfig {
+  script_file_name: "simple_pmm.py";
+  controllers_config: string[];
+  exchange: string;
+  trading_pair: string;
+  order_amount: number | null;
   bid_spread: number;
   ask_spread: number;
-  order_refresh_time: null;
-  order_amount: number | null;
-  inventory_skew_enabled: true;
-  inventory_target_base_pct: number;
+  order_refresh_time: number;
+  price_type: "mid";
 }
 export interface PaperClientConfigDraft {
   paper_trade_exchanges: string[];
@@ -25,19 +20,20 @@ export interface StrategyMappingResult {
   supported: boolean;
   readyForEngine: false;
   strategyName: string;
-  config: HummingbotPmmConfigDraft | null;
+  config: HummingbotSimplePmmConfig | null;
   paperClientConfig: PaperClientConfigDraft | null;
   warnings: string[];
 }
+/** Maps directly to the SimplePMMConfig fields in scripts/simple_pmm.py. */
 export function mapBotToHummingbotConfig(bot: BotConfig, referencePrice?: number): StrategyMappingResult {
-  if (bot.strategy !== "Pure Market Making") return {
+  if (bot.strategy !== "Simple PMM") return {
     supported: false, readyForEngine: false, strategyName: bot.strategy,
     config: null, paperClientConfig: null,
-    warnings: ["This strategy has not been mapped against the pinned Hummingbot v2.18.0 source yet.", "No engine configuration was generated."],
+    warnings: ["This saved demo strategy is not the supported Hummingbot V2 simple_pmm script. Select Simple PMM to create a Hummingbot-compatible configuration."],
   };
   const parameters = bot.parameters;
   if (!parameters) return {
-    supported: true, readyForEngine: false, strategyName: "pure_market_making",
+    supported: true, readyForEngine: false, strategyName: "simple_pmm",
     config: null, paperClientConfig: null,
     warnings: ["Bot parameters are missing. Open the bot editor and save its settings first."],
   };
@@ -45,30 +41,30 @@ export function mapBotToHummingbotConfig(bot: BotConfig, referencePrice?: number
   const orderAmount = Number.isFinite(referencePrice) && (referencePrice ?? 0) > 0
     ? Number((parameters.orderSizeUsd / (referencePrice as number)).toFixed(8))
     : null;
+  const config = connector ? {
+    script_file_name: "simple_pmm.py" as const,
+    controllers_config: [],
+    exchange: connector.value,
+    trading_pair: bot.pair,
+    order_amount: orderAmount,
+    bid_spread: parameters.bidAskSpreadPercent / 100,
+    ask_spread: parameters.bidAskSpreadPercent / 100,
+    order_refresh_time: parameters.orderRefreshTimeSeconds,
+    price_type: "mid" as const,
+  } : null;
   return {
-    supported: true, readyForEngine: false, strategyName: "pure_market_making",
-    config: {
-      strategy: "pure_market_making",
-      exchange: connector?.value ?? null,
-      market: bot.pair,
-      bid_spread: parameters.bidAskSpreadPercent,
-      ask_spread: parameters.bidAskSpreadPercent,
-      order_refresh_time: null,
-      order_amount: orderAmount,
-      inventory_skew_enabled: true,
-      inventory_target_base_pct: parameters.inventoryTargetPercent,
-    },
+    supported: true, readyForEngine: false, strategyName: "simple_pmm",
+    config,
     paperClientConfig: connector ? {
       paper_trade_exchanges: [connector.baseConnector],
       paper_trade_account_balance: { ...DEFAULT_PAPER_BALANCES },
     } : null,
     warnings: [
-      ...(connector ? [] : ["Choose a paper connector. The selected paper connector is mapped to the Hummingbot strategy exchange field; its base connector is separately enabled in paper_trade_exchanges."]),
-      ...(orderAmount === null ? [priceResult && !priceResult.ok ? priceResult.error : "order_amount is unset: enter a valid reference price to calculate base-asset quantity. The entered price is manual and not a live ticker."] : ["order_amount is calculated from the manually entered reference price. USD, USDT and USDC are treated as approximately 1:1; confirm live price and conversion before any future engine integration."]),
-      "order_refresh_time is unset because no refresh interval is configured yet.",
-      "Paper balances shown are Hummingbot v2.18.0 defaults; they are draft client settings, not funded exchange balances.",
-      "Workspace and bot risk limits are not native fields in this strategy config; backend/worker enforcement is still required.",
-      "This is a non-runnable draft. It cannot connect to an exchange or submit orders.",
+      ...(connector ? [] : ["Choose a Hummingbot paper connector such as binance_paper_trade."]),
+      ...(orderAmount === null ? ["order_amount is unset until a fresh verified reference price is available. Hummingbot requires this value in base-asset units."] : ["order_amount is converted from the configured USD notional using the current quote price. Confirm the quote currency conversion before execution."]),
+      "Bid and ask spread percentages are converted to Hummingbot decimal fractions (0.4% becomes 0.004).",
+      "The inventory target/cap and daily-loss fields in this dashboard are not fields in simple_pmm.py and are not included in the Hummingbot script config.",
+      "This remains a configuration preview. No Hummingbot process is started from this screen.",
     ],
   };
 }
