@@ -65,3 +65,10 @@
 .price-error{margin-top:12px;color:#f19a9a;font-size:11px}
 .price-note{display:block;margin-top:11px;color:var(--muted);font-size:9px;line-height:1.5}
 @media(max-width:520px){.price-results{grid-template-columns:1fr 1fr}}
+
+.live-status{font:9px 'DM Mono';color:#75c69a;border:1px solid #285340;background:#14241e;padding:5px 7px;border-radius:4px;white-space:nowrap}
+.ticker-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font:9px 'DM Mono'}
+.ticker-message{padding:10px 0;color:#d8c58d;font-size:10px}
+.market-card strong{overflow-wrap:anywhere}
+.market-card>small:last-child{color:#8f929d}
+.price-calculator input[readonly]{border-color:#285340;color:#d8c58d;cursor:default}
