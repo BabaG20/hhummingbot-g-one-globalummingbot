@@ -43,7 +43,7 @@ Creates one config through `hbot create simple_pmm`. Example body:
 }
 ```
 
-`order_amount` is in base-asset units. `bid_spread` and `ask_spread` are decimal fractions, not percentage points. The dashboard must convert its USD notional using a fresh, verified quote price before calling this endpoint.
+`order_amount` is in base-asset units. `bid_spread` and `ask_spread` are decimal fractions, not percentage points. The worker caps each spread at `0.05` (5%) as a conservative paper-trading guard. The dashboard must convert its USD notional using a fresh, verified quote price before calling this endpoint.
 
 ### `POST /v1/bot/start`
 
