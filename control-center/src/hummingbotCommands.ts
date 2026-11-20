@@ -8,7 +8,7 @@ import type { HummingbotSimplePmmConfig } from "./strategyMapper";
 export interface HummingbotCommand {
   executable: "hbot";
   args: string[];
-  purpose: "create-paper-config" | "start-paper-bot" | "read-status" | "read-logs" | "stop-bot";
+  purpose: "create-paper-config" | "start-paper-bot" | "read-status" | "stop-bot";
 }
 
 const PAPER_CONNECTORS = new Set(["binance_paper_trade", "kucoin_paper_trade", "kraken_paper_trade", "gate_io_paper_trade"]);
@@ -52,11 +52,6 @@ export function buildPaperStartCommand(configName: string): HummingbotCommand {
 
 export function buildStatusCommand(): HummingbotCommand {
   return { executable: "hbot", purpose: "read-status", args: ["status", "--json"] };
-}
-
-export function buildLogsCommand(): HummingbotCommand {
-  // No -f: an API request must not create an unbounded log-follow process.
-  return { executable: "hbot", purpose: "read-logs", args: ["logs"] };
 }
 
 export function buildStopCommand(): HummingbotCommand {
