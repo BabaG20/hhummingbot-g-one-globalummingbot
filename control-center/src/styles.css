@@ -46,3 +46,13 @@
 .config-json{max-height:280px;overflow:auto;margin:14px 0;padding:14px;border:1px solid var(--line,rgba(255,255,255,.1));border-radius:10px;background:#101114;color:#e5d7ae;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
 .mapping-warnings{display:grid;gap:8px;color:#aeb0b8;font-size:12px;line-height:1.55}
 .mapping-warnings>div{padding-left:2px}
+
+.connector-select{display:block;margin-top:14px;color:#aeb0bb;font-size:10px}
+.connector-select select{display:block;width:100%;margin-top:7px;padding:10px;background:#0d0e13;color:#eee;border:1px solid var(--line);border-radius:6px;font-size:11px}
+.balance-preview{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.balance-preview>b,.draft-subheading{display:block;font-size:10px;color:#d8c58d;margin-bottom:9px}
+.balance-preview>div{display:flex;flex-wrap:wrap;gap:7px}
+.balance-preview span{padding:6px 8px;background:#191a22;border:1px solid var(--line);border-radius:5px;color:#b8bac4;font:9px 'DM Mono'}
+.balance-preview strong{color:#e3d5ad}
+.balance-preview small{display:block;margin-top:10px;color:var(--muted);font-size:9px;line-height:1.5}
+.draft-subheading{margin:14px 0 7px}
