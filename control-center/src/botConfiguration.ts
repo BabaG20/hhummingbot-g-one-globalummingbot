@@ -4,7 +4,7 @@ import type { RiskLimits } from "./risk";
 export const DEFAULT_BOT_PARAMETERS: BotParameters = {
   orderSizeUsd: 50,
   bidAskSpreadPercent: 0.4,
-  inventoryTargetPercent: 50,
+  inventoryTargetPercent: 10,
   inventoryCapPercent: 20,
   dailyLossLimitUsd: 100,
 };
