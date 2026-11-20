@@ -3,7 +3,7 @@ import type { BotConfig, BotParameters, PaperTradeConnector } from "./domain";
 import { PAPER_CONNECTORS, DEFAULT_PAPER_BALANCES } from "./paperTrading";
 import { mapBotToHummingbotConfig } from "./strategyMapper";
 import { calculatePmmOrderAmount } from "./marketPricing";
-import { fetchMarketTicker, MARKET_DATA_PROVIDERS, type LiveMarketTicker } from "./marketData";
+import { fetchMarketTicker, getMarketDataDiagnostics, MARKET_DATA_PROVIDERS, type LiveMarketTicker } from "./marketData";
 import { DEFAULT_BOT_PARAMETERS, evaluateBotPaperOrderRisk, validateBotParameters } from "./botConfiguration";
 import { loadBots, saveBots } from "./storage";
 import { DEFAULT_RISK_LIMITS, validateRiskLimits, type RiskLimits } from "./risk";
@@ -99,7 +99,7 @@ function MarketWatchlist(){
  const [errors,setErrors]=useState<Record<string,string>>({});
  const [loading,setLoading]=useState(true);
  const [providerHealth,setProviderHealth]=useState<Record<"binance"|"kraken",ProviderHealth>>(emptyProviderHealth);
- const [lastChecked,setLastChecked]=useState<number|null>(null);
+ const [lastChecked,setLastChecked]=useState<number|null>(null);\n const [marketDiagnostics,setMarketDiagnostics]=useState(getMarketDataDiagnostics);
  useEffect(()=>{let active=true;let controller:AbortController|undefined;const load=async()=>{
   controller?.abort();controller=new AbortController();
   const results=await Promise.all(pairs.map(async ([, ,pair])=>{try{return {pair,ticker:await fetchMarketTicker(pair,controller?.signal),error:""};}catch(error){return {pair,ticker:null,error:error instanceof Error?error.message:"Quote unavailable"};}}));
@@ -117,7 +117,7 @@ function MarketWatchlist(){
    binance:{status:stats.binance.successes===0?"offline":stats.binance.failures>0?"degraded":"healthy",successes:stats.binance.successes,failures:stats.binance.failures,latencyMs:stats.binance.latencies.length?Math.round(stats.binance.latencies.reduce((a,b)=>a+b,0)/stats.binance.latencies.length):null,lastSuccess:stats.binance.successes?now:null,lastError:stats.binance.lastError},
    kraken:{status:stats.kraken.successes===0?(stats.kraken.failures>0?"offline":"standby"):stats.kraken.failures>0?"degraded":"healthy",successes:stats.kraken.successes,failures:stats.kraken.failures,latencyMs:stats.kraken.latencies.length?Math.round(stats.kraken.latencies.reduce((a,b)=>a+b,0)/stats.kraken.latencies.length):null,lastSuccess:stats.kraken.successes?now:null,lastError:stats.kraken.lastError}
   });
-  setTickers(next);setErrors(failed);setLastChecked(now);setLoading(false);
+  setTickers(next);setErrors(failed);setLastChecked(now);setMarketDiagnostics(getMarketDataDiagnostics());setLoading(false);
  };void load();const timer=window.setInterval(()=>void load(),15000);return()=>{active=false;window.clearInterval(timer);controller?.abort();};},[]);
  const allFresh=pairs.every(([, ,pair])=>!!tickers[pair]&&Date.now()-tickers[pair].fetchedAt<30000);
  const statusLabel=(status:ProviderHealth["status"])=>status==="healthy"?"HEALTHY":status==="degraded"?"DEGRADED":status==="offline"?"OFFLINE":"STANDBY";
@@ -125,7 +125,7 @@ function MarketWatchlist(){
  return <section className="panel"><PanelTitle title="Market watchlist" sub="Live public spot quotes · Binance primary / Kraken fallback · refresh every 15 seconds"/><div className="connection-banner"><Activity size={18}/><div><b>{allFresh?"Live market feed connected":"Market feed status"}</b><small>{allFresh?"Prices received and validated from the active public provider.":"Quotes may be unavailable because of network, CORS or provider rate limits."}</small></div><span className={allFresh?"live-status":"status-muted"}>{allFresh?"LIVE":loading?"LOADING":"PARTIAL / OFFLINE"}</span></div><div className="market-grid">{pairs.map(([symbol,name,pair])=>{const ticker=tickers[pair];const fresh=!!ticker&&Date.now()-ticker.fetchedAt<30000;return <div className="market-card" key={pair}><div><b>{symbol}</b><small>{name}</small></div><strong>{fresh?new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:ticker.price<1?6:2}).format(ticker.price):"—"}</strong>{fresh?<span className={ticker.changePercent24h>=0?"positive":"negative"}>{ticker.changePercent24h>=0?"+":""}{ticker.changePercent24h.toFixed(2)}% · 24h</span>:<span className="negative">{errors[pair]||"Waiting for quote"}</span>}<small>{pair} · {fresh?ticker.provider.replace(" Public Spot API","").replace(" Public Ticker API","").toUpperCase()+" LIVE":"NO VERIFIED QUOTE"}</small>{fresh&&<small>Updated {new Date(ticker.fetchedAt).toLocaleTimeString()}</small>}</div>;})}</div>
  <div className="provider-health"><div className="provider-health-head"><div><b>Provider health monitor</b><small>Measured from the latest watchlist polling cycle · no synthetic test requests</small></div><span>{lastChecked?new Date(lastChecked).toLocaleTimeString():"Not checked yet"}</span></div>
  {(["binance","kraken"] as const).map(id=>{const h=providerHealth[id],info=MARKET_DATA_PROVIDERS.find(p=>p.id===id)!;return <div className="provider-health-row" key={id}><div className="provider-health-name"><b>{info.name}</b><small>{info.role}</small></div><span className={statusClass(h.status)}>{statusLabel(h.status)}</span><span className="provider-metric"><small>Success / failed pairs</small><b>{h.successes} / {h.failures}</b></span><span className="provider-metric"><small>Avg response</small><b>{h.latencyMs===null?"—":h.latencyMs+" ms"}</b></span><span className="provider-metric"><small>Last success</small><b>{h.lastSuccess?new Date(h.lastSuccess).toLocaleTimeString():"—"}</b></span>{h.lastError&&<small className="provider-error">{h.lastError}</small>}</div>;})}
- <p className="provider-health-note">STANDBY means the fallback provider was not needed and was not probed in this cycle. HEALTHY / DEGRADED / OFFLINE reflect observed quote outcomes for the four watchlist pairs only, not a full exchange-wide uptime guarantee.</p></div>
+ <p className="provider-health-note">Cache: {marketDiagnostics.cacheHits} hits / {marketDiagnostics.cacheMisses} misses · {marketDiagnostics.cacheEntries} fresh entries · Binance requests: {marketDiagnostics.binanceRequests} · Kraken requests: {marketDiagnostics.krakenRequests}. {marketDiagnostics.binanceCooldownUntil?`Binance cooldown until ${new Date(marketDiagnostics.binanceCooldownUntil).toLocaleTimeString()}. `:""}{marketDiagnostics.krakenCooldownUntil?`Kraken cooldown until ${new Date(marketDiagnostics.krakenCooldownUntil).toLocaleTimeString()}. `:""}STANDBY means the fallback provider was not needed and was not probed. Health reflects the four watched pairs only, not a full uptime guarantee. Cached quotes expire after 8 seconds and stale quotes are never returned.</p></div>
  </section>;
 }
 function BotConfigModal({bot,riskLimits,onClose,onSave}:{bot:BotRow;riskLimits:RiskLimits;onClose:()=>void;onSave:(id:string,parameters:BotParameters,paperTradeConnector:PaperTradeConnector|null)=>void}){
