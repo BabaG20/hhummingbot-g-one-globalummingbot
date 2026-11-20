@@ -6,7 +6,8 @@ export const DEFAULT_BOT_PARAMETERS: BotParameters = {
   bidAskSpreadPercent: 0.4,
   inventoryTargetPercent: 10,
   inventoryCapPercent: 20,
-  dailyLossLimitUsd: 100,\n  orderRefreshTimeSeconds: 15,
+  dailyLossLimitUsd: 100,
+  orderRefreshTimeSeconds: 15,
 };
 
 export function validateBotParameters(value: BotParameters, global: RiskLimits): string | null {
@@ -17,7 +18,8 @@ export function validateBotParameters(value: BotParameters, global: RiskLimits):
   if (value.inventoryTargetPercent < 0 || value.inventoryTargetPercent > 100) return "Inventory target must be between 0% and 100%.";
   if (value.inventoryCapPercent <= 0 || value.inventoryCapPercent > global.maxInventoryPercent) return "Inventory cap must be above 0% and cannot exceed the global inventory limit.";
   if (value.inventoryTargetPercent > value.inventoryCapPercent) return "Inventory target cannot exceed the bot inventory cap.";
-  if (value.dailyLossLimitUsd <= 0 || value.dailyLossLimitUsd > global.maxDailyLossUsd) return "Bot daily loss limit must be above $0 and cannot exceed the global daily loss limit.";\n  if (!Number.isInteger(value.orderRefreshTimeSeconds) || value.orderRefreshTimeSeconds < 1) return "Hummingbot order refresh time must be a whole number of at least 1 second.";
+  if (value.dailyLossLimitUsd <= 0 || value.dailyLossLimitUsd > global.maxDailyLossUsd) return "Bot daily loss limit must be above $0 and cannot exceed the global daily loss limit.";
+  if (!Number.isInteger(value.orderRefreshTimeSeconds) || value.orderRefreshTimeSeconds < 1) return "Hummingbot order refresh time must be a whole number of at least 1 second.";
   return null;
 }
 
