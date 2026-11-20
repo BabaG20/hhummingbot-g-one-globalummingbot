@@ -11,7 +11,8 @@ Standalone control-plane UI for Hummingbot (Project 02), isolated under `control
 - Editable paper risk limits (daily loss, order notional, inventory and minimum spread) are validated and saved locally (`src/risk.ts`, `src/riskStorage.ts`). The pure pre-trade guard is used by the local preview only; no order flow currently submits an order.
 - A local paper-order risk preview evaluates hypothetical order notional, projected daily loss, projected inventory and spread against the tighter of bot-level and workspace limits. It never submits an order (`src/botConfiguration.ts`).
 - A strategy mapper drafts verified Hummingbot v2.18.0 Pure Market Making keys. The bot editor can select Binance, KuCoin, Kraken or Gate.io paper connectors and preview Hummingbot default paper balances (`src/paperTrading.ts`, `src/strategyMapper.ts`).
-- A market-price calculator converts the configured quote-notional size into base-asset `order_amount` using a manually entered reference price, and shows indicative bid/ask prices from the configured spread (`src/marketPricing.ts`). This is an offline calculation, not a live price feed. It only permits USD, USDT and USDC quote assets using an explicitly approximate 1:1 assumption; other quote assets are blocked until a verified conversion exists. `order_refresh_time` remains unset pending a dedicated refresh-interval setting.
+- A market-data client (`src/marketData.ts`) requests 24-hour ticker data from the public Binance Spot REST API without API credentials. The Markets watchlist polls BTC-USDT, ETH-USDT, SOL-USDT and BNB-USDT every 15 seconds, validates provider responses, shows 24-hour change and timestamps, and never substitutes demo prices when requests fail.
+- The bot editor also polls the selected pair from Binance every 15 seconds. Only a fresh quote (under 30 seconds old) can populate the PMM draft `order_amount`; stale/offline data is not mapped. The price calculator shows indicative bid/ask values from the configured spread (`src/marketPricing.ts`). USD, USDT and USDC quote assets are treated as approximately 1:1; other quote assets are blocked until a verified conversion exists. `order_refresh_time` remains unset pending a dedicated refresh-interval setting.
 - A fail-closed API contract adapter is in `src/services/controlPlane.ts`; it intentionally reports unavailable until a real backend is configured.
 
 ## Safety and truthfulness
@@ -20,7 +21,7 @@ Standalone control-plane UI for Hummingbot (Project 02), isolated under `control
 - Seeded portfolio values, prices, orders, P&L and activity are illustrative demo data, not exchange data.
 - Bot controls only change local configuration state. They do not start, pause or stop a Hummingbot process.
 - Stop actions ask for confirmation. Bot-level settings are validated against workspace risk limits before local save, but neither bot nor workspace limits are server-side enforcement and cannot prevent execution; enforce the same limits in the backend/worker before connecting any order route.
-- Hummingbot Engine, Hostless Worker, Lovable Cloud and market-data services remain disconnected until their integrations are implemented and verified.
+- Hummingbot Engine, Hostless Worker and Lovable Cloud remain disconnected. The Binance public market-data client is implemented in the browser but its runtime connectivity must be confirmed in the deployed app; provider access may be restricted by network, CORS or rate limits.
 - Never use the sample data to make real trading or investment decisions.
 
 ## Run locally
@@ -42,4 +43,4 @@ npm run build
 - **Hostless / Execution Plane (later):** long-running Hummingbot worker only, once a suitable runtime is verified.
 - **Hummingbot:** separate engine source; do not mix dashboard files into the engine root.
 
-The mapper is a non-runnable draft only. Before any engine integration, add a live, verified market-data feed and quote-currency conversion, order refresh interval, and server/worker risk enforcement. Then replace the unconfigured adapter with authenticated Lovable Cloud endpoints and server-side validation. Do not mark an integration connected until a real health check succeeds.
+The mapper is a non-runnable draft only. Before any engine integration, verify deployed Binance market-data connectivity, add quote-currency conversion, order refresh interval, and server/worker risk enforcement. Then replace the unconfigured adapter with authenticated Lovable Cloud endpoints and server-side validation. Do not mark an integration connected until a real health check succeeds.
