@@ -1,5 +1,6 @@
 import type { BotConfig } from "./domain";
 import { DEFAULT_PAPER_BALANCES, getPaperConnector } from "./paperTrading";
+import { calculatePmmOrderAmount } from "./marketPricing";
 
 /**
  * Maps only fields verified against the pinned Hummingbot v2.18.0 source.
@@ -63,7 +64,7 @@ export function mapBotToHummingbotConfig(bot: BotConfig, referencePrice?: number
     } : null,
     warnings: [
       ...(connector ? [] : ["Choose a paper connector. The selected paper connector is mapped to the Hummingbot strategy exchange field; its base connector is separately enabled in paper_trade_exchanges."]),
-      ...(orderAmount === null ? ["order_amount is unset: enter a reference price to calculate base-asset quantity. The entered price is manual and not a live ticker."] : ["order_amount is calculated from the manually entered reference price; confirm a fresh market price before any future engine integration."]),
+      ...(orderAmount === null ? [priceResult && !priceResult.ok ? priceResult.error : "order_amount is unset: enter a valid reference price to calculate base-asset quantity. The entered price is manual and not a live ticker."] : ["order_amount is calculated from the manually entered reference price. USD, USDT and USDC are treated as approximately 1:1; confirm live price and conversion before any future engine integration."]),
       "order_refresh_time is unset because no refresh interval is configured yet.",
       "Paper balances shown are Hummingbot v2.18.0 defaults; they are draft client settings, not funded exchange balances.",
       "Workspace and bot risk limits are not native fields in this strategy config; backend/worker enforcement is still required.",
