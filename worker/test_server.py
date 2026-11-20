@@ -17,9 +17,12 @@ class PaperPayloadTests(unittest.TestCase):
     def test_rejects_nonpositive_order_amount(self):
         data = self.good(); data["order_amount"] = 0
         with self.assertRaises(ValueError): validate_payload(data)
-    def test_rejects_percentage_not_decimal_spread(self):
+    def test_rejects_percentage_like_spread(self):
         data = self.good(); data["bid_spread"] = 0.4
         with self.assertRaises(ValueError): validate_payload(data)
+    def test_accepts_maximum_conservative_spread(self):
+        data = self.good(); data["bid_spread"] = 0.05; data["ask_spread"] = 0.05
+        self.assertEqual(validate_payload(data)["bid_spread"], 0.05)
     def test_rejects_boolean_as_number(self):
         data = self.good(); data["order_amount"] = True
         with self.assertRaises(ValueError): validate_payload(data)
