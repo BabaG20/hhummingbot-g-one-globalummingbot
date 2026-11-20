@@ -8,7 +8,8 @@ Standalone control-plane UI for Hummingbot (Project 02), isolated under `control
 - Typed domain contracts in `src/domain.ts` for bots, paper orders, service health, settings and future API responses.
 - Paper bot configurations can be created, paused, resumed and stopped as local demo state.
 - Bot configurations persist in the current browser using versioned localStorage (`src/storage.ts`). Each bot can store its own order size, bid/ask spread, inventory target/cap and daily loss limit (`src/botConfiguration.ts`). This is **not** cloud persistence and does not sync between devices or users.
-- Editable paper risk limits (daily loss, order notional, inventory and minimum spread) are validated and saved locally (`src/risk.ts`, `src/riskStorage.ts`). The pure pre-trade guard is a contract for future paper-order submission; no order flow currently calls it.
+- Editable paper risk limits (daily loss, order notional, inventory and minimum spread) are validated and saved locally (`src/risk.ts`, `src/riskStorage.ts`). The pure pre-trade guard is used by the local preview only; no order flow currently submits an order.
+- A local paper-order risk preview evaluates hypothetical order notional, projected daily loss, projected inventory and spread against the tighter of bot-level and workspace limits. It never submits an order (`src/botConfiguration.ts`).
 - A fail-closed API contract adapter is in `src/services/controlPlane.ts`; it intentionally reports unavailable until a real backend is configured.
 
 ## Safety and truthfulness
