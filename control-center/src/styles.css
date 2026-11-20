@@ -56,3 +56,12 @@
 .balance-preview strong{color:#e3d5ad}
 .balance-preview small{display:block;margin-top:10px;color:var(--muted);font-size:9px;line-height:1.5}
 .draft-subheading{margin:14px 0 7px}
+
+.price-calculator{margin-top:14px}
+.price-results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:13px}
+.price-results>div{padding:11px;border:1px solid var(--line);border-radius:7px;background:#15161d;min-width:0}
+.price-results small{display:block;color:var(--muted);font-size:9px;margin-bottom:6px}
+.price-results b{display:block;color:#e7d8ae;font:12px 'DM Mono',monospace;overflow-wrap:anywhere}
+.price-error{margin-top:12px;color:#f19a9a;font-size:11px}
+.price-note{display:block;margin-top:11px;color:var(--muted);font-size:9px;line-height:1.5}
+@media(max-width:520px){.price-results{grid-template-columns:1fr 1fr}}
