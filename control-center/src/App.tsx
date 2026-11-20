@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { BotConfig, BotParameters } from "./domain";
-import { DEFAULT_BOT_PARAMETERS, validateBotParameters } from "./botConfiguration";
+import { DEFAULT_BOT_PARAMETERS, evaluateBotPaperOrderRisk, validateBotParameters } from "./botConfiguration";
 import { loadBots, saveBots } from "./storage";
 import { DEFAULT_RISK_LIMITS, validateRiskLimits, type RiskLimits } from "./risk";
 import { loadRiskLimits, saveRiskLimits } from "./riskStorage";
@@ -87,7 +87,12 @@ function BotTable({bots,toggle,stop,edit}:any){return <div className="table-wrap
 function BotConfigModal({bot,riskLimits,onClose,onSave}:{bot:BotRow;riskLimits:RiskLimits;onClose:()=>void;onSave:(id:string,parameters:BotParameters)=>void}){
  const [values,setValues]=useState<BotParameters>({...DEFAULT_BOT_PARAMETERS,...bot.parameters});
  const [error,setError]=useState("");
- const update=(key:keyof BotParameters,value:string)=>setValues(old=>({...old,[key]:Number(value)}));
+ const [projectedDailyLoss,setProjectedDailyLoss]=useState("0");
+ const [projectedInventory,setProjectedInventory]=useState("0");
+ const [previewRun,setPreviewRun]=useState(false);
+ const checks=previewRun?evaluateBotPaperOrderRisk(values,riskLimits,Number(projectedDailyLoss),Number(projectedInventory)):[];
+ const previewPassed=checks.length>0&&checks.every(check=>check.passed);
+ const update=(key:keyof BotParameters,value:string)=>{setValues(old=>({...old,[key]:Number(value)}));setPreviewRun(false);};
  const submit=()=>{const message=validateBotParameters(values,riskLimits);if(message){setError(message);return;}onSave(bot.id,values);};
  return <div className="modal-backdrop" onClick={onClose}><div className="modal config-modal" onClick={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">BOT CONFIGURATION</span><h2>{bot.name}</h2></div><button className="icon-btn" onClick={onClose}><X size={18}/></button></div><p>Set this bot's paper strategy parameters. Values are saved locally; no order or engine action occurs.</p><div className="config-fields">
  <label>Order size (USD)<input type="number" min="0.01" step="1" value={values.orderSizeUsd} onChange={e=>update("orderSizeUsd",e.target.value)}/><small>Global maximum: {money(riskLimits.maxOrderNotionalUsd)}</small></label>
@@ -95,7 +100,7 @@ function BotConfigModal({bot,riskLimits,onClose,onSave}:{bot:BotRow;riskLimits:R
  <label>Inventory target (%)<input type="number" min="0" max="100" step="1" value={values.inventoryTargetPercent} onChange={e=>update("inventoryTargetPercent",e.target.value)}/></label>
  <label>Inventory cap (%)<input type="number" min="0.01" max="100" step="1" value={values.inventoryCapPercent} onChange={e=>update("inventoryCapPercent",e.target.value)}/><small>Global maximum: {riskLimits.maxInventoryPercent}%</small></label>
  <label>Bot daily loss limit (USD)<input type="number" min="0.01" step="1" value={values.dailyLossLimitUsd} onChange={e=>update("dailyLossLimitUsd",e.target.value)}/><small>Global maximum: {money(riskLimits.maxDailyLossUsd)}</small></label>
- </div>{error&&<div className="config-error">{error}</div>}<div className="config-boundary"><ShieldCheck size={15}/> Local validation only. Backend / worker enforcement is not implemented.</div><div className="modal-actions"><button className="outline-btn" onClick={onClose}>Cancel</button><button className="gold-btn" onClick={submit}>Save configuration</button></div></div></div>;
+ </div><section className="paper-preview"><div className="preview-heading"><div><b>Paper order risk preview</b><small>Hypothetical order · no exchange request</small></div><button className="outline-btn" onClick={()=>{setError("");setPreviewRun(true);}}>Run risk preview</button></div><div className="preview-inputs"><label>Projected daily loss (USD)<input type="number" min="0" step="1" value={projectedDailyLoss} onChange={e=>{setProjectedDailyLoss(e.target.value);setPreviewRun(false);}}/></label><label>Projected inventory (%)<input type="number" min="0" step="0.1" value={projectedInventory} onChange={e=>{setProjectedInventory(e.target.value);setPreviewRun(false);}}/></label></div>{previewRun&&<div className="preview-results"><div className={previewPassed?"preview-status pass":"preview-status fail"}>{previewPassed?"All paper risk checks passed":"Paper order rejected by risk preview"}</div>{checks.map((check,index)=><div className="preview-check" key={check.key+"-"+index}><span className={check.passed?"check-pass":"check-fail"}>{check.passed?"PASS":"BLOCK"}</span><span>{check.message}</span></div>)}</div>}</section>{error&&<div className="config-error">{error}</div>}<div className="config-boundary"><ShieldCheck size={15}/> Local validation only. Backend / worker enforcement is not implemented.</div><div className="modal-actions"><button className="outline-btn" onClick={onClose}>Cancel</button><button className="gold-btn" onClick={submit}>Save configuration</button></div></div></div>;
 }
 
 function SimpleTable({headers,rows}:any){return <div className="table-wrap"><table><thead><tr>{headers.map((h:string)=><th key={h}>{h}</th>)}</tr></thead><tbody>{rows.map((r:string[],i:number)=><tr key={i}>{r.map((c,j)=><td key={j}>{j===5?<span className={c==="Filled"?"state-running":"state-paused"}>{c}</span>:c}</td>)}</tr>)}</tbody></table></div>}
