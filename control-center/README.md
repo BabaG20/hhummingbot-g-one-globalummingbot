@@ -10,7 +10,7 @@ Standalone control-plane UI for Hummingbot (Project 02), isolated under `control
 - Bot configurations persist in the current browser using versioned localStorage (`src/storage.ts`). Each bot can store its own order size, bid/ask spread, inventory target/cap and daily loss limit (`src/botConfiguration.ts`). This is **not** cloud persistence and does not sync between devices or users.
 - Editable paper risk limits (daily loss, order notional, inventory and minimum spread) are validated and saved locally (`src/risk.ts`, `src/riskStorage.ts`). The pure pre-trade guard is used by the local preview only; no order flow currently submits an order.
 - A local paper-order risk preview evaluates hypothetical order notional, projected daily loss, projected inventory and spread against the tighter of bot-level and workspace limits. It never submits an order (`src/botConfiguration.ts`).
-- A strategy mapper drafts the verified Hummingbot v2.18.0 Pure Market Making config keys. It deliberately leaves connector, base-asset order amount and refresh interval unset where required inputs are missing; Grid and Avellaneda mappings remain pending (`src/strategyMapper.ts`).
+- A strategy mapper drafts verified Hummingbot v2.18.0 Pure Market Making keys. The bot editor can select Binance, KuCoin, Kraken or Gate.io paper connectors; it maps the suffixed connector into the strategy config and the base connector into `paper_trade_exchanges`. It also previews Hummingbot default paper balances as separate client settings (`src/paperTrading.ts`, `src/strategyMapper.ts`). It still leaves base-asset order amount and refresh interval unset where required inputs are missing; Grid and Avellaneda mappings remain pending.
 - A fail-closed API contract adapter is in `src/services/controlPlane.ts`; it intentionally reports unavailable until a real backend is configured.
 
 ## Safety and truthfulness
@@ -41,4 +41,4 @@ npm run build
 - **Hostless / Execution Plane (later):** long-running Hummingbot worker only, once a suitable runtime is verified.
 - **Hummingbot:** separate engine source; do not mix dashboard files into the engine root.
 
-The mapper is a non-runnable draft only. Before any engine integration, add validated connector selection, a verified USD-to-base-asset conversion, order refresh interval, and server/worker risk enforcement. Then replace the unconfigured adapter with authenticated Lovable Cloud endpoints and server-side validation. Do not mark an integration connected until a real health check succeeds.
+The mapper is a non-runnable draft only. Before any engine integration, add verified USD-to-base-asset conversion, order refresh interval, and server/worker risk enforcement. Then replace the unconfigured adapter with authenticated Lovable Cloud endpoints and server-side validation. Do not mark an integration connected until a real health check succeeds.
