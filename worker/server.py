@@ -15,6 +15,7 @@ COMMAND_TIMEOUT = {"create": 120, "start": 45, "status": 20, "stop": 60}
 STATE_PATH = Path(os.environ.get("WORKER_STATE_PATH", "/home/hummingbot/data/gone_worker_state.json"))
 HBOT_BIN = os.environ.get("HBOT_BIN", "hbot")
 API_TOKEN = os.environ.get("GONE_WORKER_TOKEN", "")
+STATE_LOCK = threading.Lock()
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
@@ -104,23 +105,26 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/v1/bot/config":
                 data = validate_payload(self.read_json())
-                if load_state() is not None: return self.send_json(409, {"error": "This worker already owns a bot config. Use a fresh dedicated worker for another bot."})
-                filename = "conf_gone_" + data["name"] + ".yml"
-                args = ["create", "simple_pmm", "--name", filename]
-                for key in ("exchange", "trading_pair", "order_amount", "bid_spread", "ask_spread", "order_refresh_time", "price_type"): args += ["--set", key + "=" + str(data[key])]
-                result = run_hbot(args, "create")
-                state = {"config": filename, "strategy": "simple_pmm", "paper_only": True, "exchange": data["exchange"], "trading_pair": data["trading_pair"], "created_at": now_iso()}
-                save_state(state)
+                with STATE_LOCK:
+                    if load_state() is not None: return self.send_json(409, {"error": "This worker already owns a bot config. Use a fresh dedicated worker for another bot."})
+                    filename = "conf_gone_" + data["name"] + ".yml"
+                    args = ["create", "simple_pmm", "--name", filename]
+                    for key in ("exchange", "trading_pair", "order_amount", "bid_spread", "ask_spread", "order_refresh_time", "price_type"): args += ["--set", key + "=" + str(data[key])]
+                    result = run_hbot(args, "create")
+                    state = {"config": filename, "strategy": "simple_pmm", "paper_only": True, "exchange": data["exchange"], "trading_pair": data["trading_pair"], "created_at": now_iso()}
+                    save_state(state)
                 return self.send_json(201, {"ok": True, "bot": state, "result": result})
             if path == "/v1/bot/start":
                 if self.headers.get("Content-Length", "0") not in ("", "0"): return self.send_json(400, {"error": "This endpoint does not accept a body."})
-                state = load_state()
-                if not state or state.get("paper_only") is not True: return self.send_json(409, {"error": "No worker-owned paper config exists. Create one first."})
-                result = run_hbot(["start", state["config"]], "start")
+                with STATE_LOCK:
+                    state = load_state()
+                    if not state or state.get("paper_only") is not True: return self.send_json(409, {"error": "No worker-owned paper config exists. Create one first."})
+                    result = run_hbot(["start", state["config"]], "start")
                 return self.send_json(200, {"ok": True, "started_config": state["config"], "result": result})
             if path == "/v1/bot/stop":
                 if self.headers.get("Content-Length", "0") not in ("", "0"): return self.send_json(400, {"error": "This endpoint does not accept a body."})
-                result = run_hbot(["stop"], "stop")
+                with STATE_LOCK:
+                    result = run_hbot(["stop"], "stop")
                 return self.send_json(200, {"ok": True, "result": result})
             return self.send_json(404, {"error": "not_found"})
         except ValueError as exc: return self.send_json(400, {"error": str(exc)})
