@@ -5,6 +5,14 @@ export type BotStatus = "Running" | "Paused" | "Stopped";
 export type TradingMode = "paper";
 export type BotStrategy = "Pure Market Making" | "Grid" | "Avellaneda Market Making";
 
+export interface BotParameters {
+  orderSizeUsd: number;
+  bidAskSpreadPercent: number;
+  inventoryTargetPercent: number;
+  inventoryCapPercent: number;
+  dailyLossLimitUsd: number;
+}
+
 export interface BotConfig {
   id: string;
   name: string;
@@ -15,6 +23,7 @@ export interface BotConfig {
   uptime: string;
   createdAt: string;
   tradingMode: TradingMode;
+  parameters?: BotParameters;
 }
 
 export interface PaperOrder {
