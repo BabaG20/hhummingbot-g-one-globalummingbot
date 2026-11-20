@@ -20,12 +20,21 @@ export default function App(){
  useEffect(()=>{ saveBots(bots); },[bots]);
  const [query,setQuery]=useState("");
  const [showCreate,setShowCreate]=useState(false);
+ const [newBotName,setNewBotName]=useState("New Paper Bot");
+ const [newBotPair,setNewBotPair]=useState("BTC-USDT");
+ const [newBotStrategy,setNewBotStrategy]=useState<BotConfig["strategy"]>("Pure Market Making");
  const [mobileNav,setMobileNav]=useState(false);
  const [notice,setNotice]=useState("");
  const filtered=useMemo(()=>bots.filter(b=>(b.name+" "+b.pair+" "+b.strategy).toLowerCase().includes(query.toLowerCase())),[bots,query]);
  const toggle=(name:string)=>setBots(old=>old.map(b=>b.name===name?{...b,state:b.state==="Running"?"Paused":"Running"}:b));
  const stop=(name:string)=>setBots(old=>old.map(b=>b.name===name?{...b,state:"Stopped"}:b));
- const create=()=>{setBots(old=>[{id:crypto.randomUUID(),name:"New Paper Bot",pair:"BTC-USDT",strategy:"Pure Market Making",state:"Stopped",pnl:0,uptime:"—",createdAt:new Date().toISOString(),tradingMode:"paper"},...old]);setShowCreate(false);setPage("Bots");setNotice("Demo bot created. No engine is connected.");};
+ const create=()=>{
+  const name=newBotName.trim();
+  if(!name){setNotice("Enter a name for this paper bot.");return;}
+  if(bots.some(bot=>bot.name.toLowerCase()===name.toLowerCase())){setNotice("A bot with that name already exists.");return;}
+  setBots(old=>[{id:crypto.randomUUID(),name,pair:newBotPair,strategy:newBotStrategy,state:"Stopped",pnl:0,uptime:"—",createdAt:new Date().toISOString(),tradingMode:"paper"},...old]);
+  setShowCreate(false);setPage("Bots");setNotice("Demo bot configuration saved locally. No engine is connected.");
+ };
  return <div className="app-shell">
   <aside className={mobileNav?"sidebar open":"sidebar"}>
    <div className="brand"><div className="brand-mark">G</div><div><b>G ONE GLOBAL</b><small>TRADING SYSTEMS</small></div><button className="icon-btn mobile-close" onClick={()=>setMobileNav(false)}><X size={17}/></button></div>
@@ -55,7 +64,7 @@ export default function App(){
    </div>
    <footer><span>© 2026 G One Global</span><span><ShieldCheck size={13}/> PAPER TRADING ONLY <i/> One Ecosystem. Endless Possibilities.</span></footer>
   </main>
-  {showCreate&&<div className="modal-backdrop" onClick={()=>setShowCreate(false)}><div className="modal" onClick={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">NEW CONFIGURATION</span><h2>Create paper bot</h2></div><button className="icon-btn" onClick={()=>setShowCreate(false)}><X size={18}/></button></div><p>This creates a demo configuration only. No Hummingbot process will start.</p><label>Bot name<input defaultValue="New Paper Bot"/></label><label>Trading pair<select defaultValue="BTC-USDT"><option>BTC-USDT</option><option>ETH-USDT</option><option>SOL-USDT</option></select></label><label>Strategy<select><option>Pure Market Making</option><option>Grid</option><option>Avellaneda Market Making</option></select></label><div className="modal-actions"><button className="outline-btn" onClick={()=>setShowCreate(false)}>Cancel</button><button className="gold-btn" onClick={create}>Create demo bot</button></div></div></div>}
+  {showCreate&&<div className="modal-backdrop" onClick={()=>setShowCreate(false)}><div className="modal" onClick={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">NEW CONFIGURATION</span><h2>Create paper bot</h2></div><button className="icon-btn" onClick={()=>setShowCreate(false)}><X size={18}/></button></div><p>This creates a demo configuration only. No Hummingbot process will start.</p><label>Bot name<input value={newBotName} onChange={e=>setNewBotName(e.target.value)} maxLength={48}/></label><label>Trading pair<select value={newBotPair} onChange={e=>setNewBotPair(e.target.value)}><option>BTC-USDT</option><option>ETH-USDT</option><option>SOL-USDT</option></select></label><label>Strategy<select value={newBotStrategy} onChange={e=>setNewBotStrategy(e.target.value as BotConfig["strategy"])}><option>Pure Market Making</option><option>Grid</option><option>Avellaneda Market Making</option></select></label><div className="modal-actions"><button className="outline-btn" onClick={()=>setShowCreate(false)}>Cancel</button><button className="gold-btn" onClick={create}>Create demo bot</button></div></div></div>}
  </div>
 }
 function Stat({icon:Icon,label,value,note,positive,warn}:any){return <div className="stat-card"><div className="stat-top"><span>{label}</span><div className="stat-icon"><Icon size={17}/></div></div><strong className={warn?"muted-value":""}>{value}</strong><small className={positive?"positive":""}>{note}</small></div>}
